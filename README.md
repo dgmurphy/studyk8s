@@ -8,9 +8,9 @@ kubectl create secret generic postgresql-secrets --from-file=secrets/
 
 ## Deploy
 Create:
+* storage (local)
 * configmap
 * secrets
-* storage (local)
 * deployment
 * service (with NodePort)
 

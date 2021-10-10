@@ -1,0 +1,63 @@
+---			
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        runAsUser: 999
+        supplementalGroups: [999,1000]
+        fsGroup: 999
+      volumes:
+        - name: postgresdb
+          persistentVolumeClaim: 
+            claimName: postgres-pv-claim
+        - name: secret-vol
+          secret:
+            secretName: postgresql-secrets 
+            items:
+              - key: server.key
+                path: server.key
+                mode: 0600
+              - key: server.crt
+                path: server.crt
+        - name: config-vol
+          configMap:
+            name: postgresql-config
+      containers:
+      - name: postgres
+        image: postgres:10.4
+        imagePullPolicy: IfNotPresent
+        args:
+          - -c
+          - hba_file=/etc/postgresql-config-vol/pg_hba.conf
+          - -c
+          - config_file=/etc/postgresql-config-vol/postgresql.conf
+        env:
+          - name: POSTGRES_USER
+            value: postgres
+          - name: PGUSER
+            value: postgres
+          - name: POSTGRES_DB
+            value: mmdb
+          - name: POSTGRES_PASSWORD_FILE
+            value: /etc/postgresql-secrets-vol/postgresql-pwd.txt
+        ports:
+         - containerPort: 5432
+        volumeMounts:
+          - name: config-vol
+            mountPath: /etc/postgresql-config-vol
+          - name: secret-vol
+            mountPath: /etc/postgresql-secrets-vol
+          - name: postgresdb
+            mountPath: /var/lib/postgresql/data
+---

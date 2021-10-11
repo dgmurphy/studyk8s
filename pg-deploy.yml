@@ -26,9 +26,9 @@ metadata:
   labels:
     app: postgres
 data:
-  POSTGRES_DB: postgres
-  POSTGRES_USER: postgresadmin
-  PGDATA: /var/lib/postgresql/data/db-data
+  #POSTGRES_DB: postgres
+  #POSTGRES_USER: postgresadmin
+  #PGDATA: /var/lib/postgresql/data/db-data
   POSTGRES_PASSWORD_FILE: /etc/postgresql-secrets-vol/postgresql-pwd.txt
 ---			
 apiVersion: apps/v1
@@ -46,9 +46,9 @@ spec:
         app: postgres
     spec:
       securityContext:
-        runAsUser: 999
-        supplementalGroups: [999,1000]
-        fsGroup: 999
+        runAsUser: 26
+        supplementalGroups: [26,1000]
+        fsGroup: 26
       volumes:
         - name: postgresdb
           persistentVolumeClaim: 
@@ -72,7 +72,8 @@ spec:
             name: mysql-initdb-config
       containers:
       - name: postgres
-        image: postgres:10.4
+        image: localhost:5000/wingbrace/postgres:12.7
+        #image: postgres:10.4
         imagePullPolicy: IfNotPresent
         args:
           - -c

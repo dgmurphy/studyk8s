@@ -18,8 +18,8 @@ Create:
 * exec into postgres pod
 * postgres=# SHOW ssl;
 * from host: psql -h localhost -U [user] --password -p [nodeport] [dbname]
-* no ssl: `psql -h localhost -U postgresadmin --password -p 31070 postgresdb`
-* ssl: `psql -U postgresadmin  "sslmode=require host=localhost port=32658 dbname=postgresdb"`
+* no ssl: `psql -h localhost -U postgresadmin --password -p 31070 postgres`
+* ssl: `psql -U postgresadmin  "sslmode=require host=localhost port=32658 dbname=postgres"`
 
 
 # References

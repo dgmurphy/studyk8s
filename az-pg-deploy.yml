@@ -1,0 +1,97 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-initdb-config
+data:
+  initdb.sql: |
+    create user keycloakuser with encrypted password 'keycloakpass';
+    create database keycloakdb with encoding 'UTF8' owner keycloakuser;
+    create user xwiki with encrypted password 'xwikipass';
+    create database xwiki with encoding 'UTF8' owner xwiki;
+    create user nectar with encrypted password 'nectar';
+    create user nicadd with encrypted password 'nicadd';
+    create database nectar_oltp with encoding 'UTF8' owner nectar;
+    create database nectar_dw with encoding 'UTF8' owner nectar;
+    create database nicadd_oltp with encoding 'UTF8' owner nicadd;
+    grant all privileges on database nectar_oltp to nectar;
+    grant all privileges on database nectar_dw to nectar;
+    grant all privileges on database nicadd_oltp to nicadd;
+    grant all privileges on all tables in schema public to nicadd; 
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgcreds-config
+  labels:
+    app: postgres
+data:
+  #POSTGRES_DB: postgres
+  #POSTGRES_USER: postgresadmin
+  #PGDATA: /var/lib/postgresql/data/db-data
+  POSTGRES_PASSWORD_FILE: /etc/postgresql-secrets-vol/postgresql-pwd.txt
+---			
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        runAsUser: 26
+        supplementalGroups: [26,1000]
+        fsGroup: 26
+      volumes:
+        - name: postgresdb
+          persistentVolumeClaim: 
+            claimName: postgres-pv-claim
+        - name: secret-vol
+          secret:
+            secretName: postgresql-secrets 
+            items:
+              - key: server.key
+                path: server.key
+                mode: 0600
+              - key: server.crt
+                path: server.crt
+              - key: postgresql-pwd.txt
+                path: postgresql-pwd.txt
+        - name: config-vol
+          configMap:
+            name: postgresql-config
+        - name: mysql-initdb
+          configMap:
+            name: mysql-initdb-config
+      containers:
+      - name: postgres
+        image: n2offline1:5000/wingbrace/postgres:12.7
+        #image: postgres:10.4
+        imagePullPolicy: IfNotPresent
+        args:
+          - -c
+          - hba_file=/etc/postgresql-config-vol/pg_hba.conf
+          - -c
+          - config_file=/etc/postgresql-config-vol/postgresql.conf
+        envFrom:
+          - configMapRef: 
+              name: pgcreds-config
+        ports:
+         - containerPort: 5432
+        volumeMounts:
+          - name: config-vol
+            mountPath: /etc/postgresql-config-vol
+          - name: secret-vol
+            mountPath: /etc/postgresql-secrets-vol
+          - name: postgresdb
+            mountPath: /var/lib/postgresql/data
+          - name: mysql-initdb
+            mountPath: /docker-entrypoint-initdb.d
+---

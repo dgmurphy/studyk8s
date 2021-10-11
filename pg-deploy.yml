@@ -2,12 +2,33 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: mysql-initdb-config
+data:
+  initdb.sql: |
+    create user keycloakuser with encrypted password 'keycloakpass';
+    create database keycloakdb with encoding 'UTF8' owner keycloakuser;
+    create user xwiki with encrypted password 'xwikipass';
+    create database xwiki with encoding 'UTF8' owner xwiki;
+    create user nectar with encrypted password 'nectar';
+    create user nicadd with encrypted password 'nicadd';
+    create database nectar_oltp with encoding 'UTF8' owner nectar;
+    create database nectar_dw with encoding 'UTF8' owner nectar;
+    create database nicadd_oltp with encoding 'UTF8' owner nicadd;
+    grant all privileges on database nectar_oltp to nectar;
+    grant all privileges on database nectar_dw to nectar;
+    grant all privileges on database nicadd_oltp to nicadd;
+    grant all privileges on all tables in schema public to nicadd; 
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: pgcreds-config
   labels:
     app: postgres
 data:
-  POSTGRES_DB: postgresdb
+  POSTGRES_DB: postgres
   POSTGRES_USER: postgresadmin
+  PGDATA: /var/lib/postgresql/data/db-data
   POSTGRES_PASSWORD_FILE: /etc/postgresql-secrets-vol/postgresql-pwd.txt
 ---			
 apiVersion: apps/v1
@@ -46,6 +67,9 @@ spec:
         - name: config-vol
           configMap:
             name: postgresql-config
+        - name: mysql-initdb
+          configMap:
+            name: mysql-initdb-config
       containers:
       - name: postgres
         image: postgres:10.4
@@ -67,4 +91,6 @@ spec:
             mountPath: /etc/postgresql-secrets-vol
           - name: postgresdb
             mountPath: /var/lib/postgresql/data
+          - name: mysql-initdb
+            mountPath: /docker-entrypoint-initdb.d
 ---

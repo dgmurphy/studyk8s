@@ -27,3 +27,9 @@ https://purnapoudel.blogspot.com/2018/09/how-to-configure-postgresql-with-ssl-tl
 
 https://severalnines.com/database-blog/using-kubernetes-deploy-postgresql
 
+# Notes
+This is the pod user in postgres:
+$ whoami
+postgres
+$ id
+uid=999(postgres) gid=999(postgres) groups=999(postgres),103(ssl-cert),1000
